@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import jsPDF from "jspdf";
 
 type ATSData = {
   atsScore: number;
@@ -26,19 +27,115 @@ export default function ResultsPage() {
     }
   }, []);
 
+  const downloadReport = () => {
+    if (!data) return;
+
+    const pdf = new jsPDF();
+
+    let y = 20;
+
+    pdf.setFontSize(22);
+    pdf.text("ATS Resume Analysis Report", 20, y);
+
+    y += 15;
+
+    pdf.setFontSize(14);
+    pdf.text(`ATS Score: ${data.atsScore}%`, 20, y);
+
+    y += 10;
+    pdf.text(`Skill Match: ${data.skillMatch}%`, 20, y);
+
+    y += 10;
+    pdf.text(
+      `Skills Found: ${data.foundSkills.length}`,
+      20,
+      y
+    );
+
+    y += 18;
+
+    pdf.setFontSize(16);
+    pdf.text("Found Skills", 20, y);
+
+    y += 10;
+
+    pdf.setFontSize(11);
+
+    if (data.foundSkills.length === 0) {
+      pdf.text("No recognized skills found.", 20, y);
+      y += 8;
+    } else {
+      data.foundSkills.forEach((skill) => {
+        pdf.text(`• ${skill}`, 25, y);
+        y += 7;
+
+        if (y > 270) {
+          pdf.addPage();
+          y = 20;
+        }
+      });
+    }
+
+    y += 8;
+
+    pdf.setFontSize(16);
+    pdf.text("Missing Skills", 20, y);
+
+    y += 10;
+
+    pdf.setFontSize(11);
+
+    if (data.missingSkills.length === 0) {
+      pdf.text("No missing skills detected.", 20, y);
+      y += 8;
+    } else {
+      data.missingSkills.forEach((skill) => {
+        pdf.text(`• ${skill}`, 25, y);
+        y += 7;
+
+        if (y > 270) {
+          pdf.addPage();
+          y = 20;
+        }
+      });
+    }
+
+    y += 8;
+
+    pdf.setFontSize(16);
+    pdf.text("Resume Suggestions", 20, y);
+
+    y += 10;
+
+    pdf.setFontSize(11);
+
+    data.suggestions.forEach((suggestion) => {
+      const lines = pdf.splitTextToSize(
+        `• ${suggestion}`,
+        165
+      );
+
+      pdf.text(lines, 25, y);
+
+      y += lines.length * 7 + 3;
+
+      if (y > 270) {
+        pdf.addPage();
+        y = 20;
+      }
+    });
+
+    pdf.save("ATS-Resume-Report.pdf");
+  };
+
   if (!data) {
     return (
       <main className="min-h-screen bg-black text-white flex items-center justify-center">
         <div className="text-center">
           <div className="text-5xl mb-5">📊</div>
-
           <h1 className="text-2xl font-bold">
             Loading ATS Report...
           </h1>
-
-          <p className="text-gray-400 mt-2">
-            Please wait.
-          </p>
         </div>
       </main>
     );
@@ -49,10 +146,7 @@ export default function ResultsPage() {
 
       <div className="max-w-7xl mx-auto">
 
-        {/* HEADER */}
-
         <div className="mb-10">
-
           <p className="text-violet-400 font-semibold mb-2">
             ATS CHECKER
           </p>
@@ -64,16 +158,11 @@ export default function ResultsPage() {
           <p className="text-gray-400 mt-3">
             Detailed analysis of your resume.
           </p>
-
         </div>
-
 
         {/* SCORE CARDS */}
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-
-
-          {/* ATS SCORE */}
 
           <div className="bg-white/5 border border-white/10 rounded-3xl p-8 text-center">
 
@@ -83,7 +172,6 @@ export default function ResultsPage() {
                 className="w-40 h-40 -rotate-90"
                 viewBox="0 0 120 120"
               >
-
                 <circle
                   cx="60"
                   cy="60"
@@ -105,19 +193,15 @@ export default function ResultsPage() {
                   className="text-green-400"
                   strokeDasharray="314"
                   strokeDashoffset={
-                    314 -
-                    (314 * data.atsScore) / 100
+                    314 - (314 * data.atsScore) / 100
                   }
                 />
-
               </svg>
 
               <div className="absolute inset-0 flex items-center justify-center">
-
                 <span className="text-4xl font-bold">
                   {data.atsScore}%
                 </span>
-
               </div>
 
             </div>
@@ -131,9 +215,6 @@ export default function ResultsPage() {
             </p>
 
           </div>
-
-
-          {/* SKILL MATCH */}
 
           <div className="bg-white/5 border border-white/10 rounded-3xl p-8 text-center flex flex-col justify-center">
 
@@ -150,9 +231,6 @@ export default function ResultsPage() {
             </p>
 
           </div>
-
-
-          {/* SKILLS FOUND */}
 
           <div className="bg-white/5 border border-white/10 rounded-3xl p-8 text-center flex flex-col justify-center">
 
@@ -172,13 +250,9 @@ export default function ResultsPage() {
 
         </div>
 
-
         {/* FOUND + MISSING */}
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-10">
-
-
-          {/* FOUND SKILLS */}
 
           <div className="bg-white/5 border border-white/10 rounded-3xl p-8">
 
@@ -187,36 +261,23 @@ export default function ResultsPage() {
             </h2>
 
             {data.foundSkills.length === 0 ? (
-
               <p className="text-gray-400">
                 No recognized skills found.
               </p>
-
             ) : (
-
               <div className="flex flex-wrap gap-3">
-
-                {data.foundSkills.map(
-                  (skill, index) => (
-
-                    <span
-                      key={index}
-                      className="px-4 py-2 rounded-full bg-green-500/10 border border-green-500/30 text-green-400"
-                    >
-                      ✓ {skill}
-                    </span>
-
-                  )
-                )}
-
+                {data.foundSkills.map((skill, index) => (
+                  <span
+                    key={index}
+                    className="px-4 py-2 rounded-full bg-green-500/10 border border-green-500/30 text-green-400"
+                  >
+                    ✓ {skill}
+                  </span>
+                ))}
               </div>
-
             )}
 
           </div>
-
-
-          {/* MISSING SKILLS */}
 
           <div className="bg-white/5 border border-white/10 rounded-3xl p-8">
 
@@ -225,45 +286,27 @@ export default function ResultsPage() {
             </h2>
 
             {data.missingSkills.length === 0 ? (
-
               <div className="bg-green-500/10 border border-green-500/20 rounded-xl p-5">
-
                 <p className="text-green-400 font-semibold">
                   🎉 No missing skills!
                 </p>
-
-                <p className="text-gray-400 text-sm mt-2">
-                  Your resume contains the detected
-                  job-related skills.
-                </p>
-
               </div>
-
             ) : (
-
               <div className="flex flex-wrap gap-3">
-
-                {data.missingSkills.map(
-                  (skill, index) => (
-
-                    <span
-                      key={index}
-                      className="px-4 py-2 rounded-full bg-red-500/10 border border-red-500/30 text-red-400"
-                    >
-                      ✗ {skill}
-                    </span>
-
-                  )
-                )}
-
+                {data.missingSkills.map((skill, index) => (
+                  <span
+                    key={index}
+                    className="px-4 py-2 rounded-full bg-red-500/10 border border-red-500/30 text-red-400"
+                  >
+                    ✗ {skill}
+                  </span>
+                ))}
               </div>
-
             )}
 
           </div>
 
         </div>
-
 
         {/* ATS BREAKDOWN */}
 
@@ -273,135 +316,68 @@ export default function ResultsPage() {
             📊 ATS Score Breakdown
           </h2>
 
-
           <div className="space-y-7">
 
-
-            {/* KEYWORDS */}
-
             <div>
-
               <div className="flex justify-between mb-2">
-
-                <span>
-                  Keywords Match
-                </span>
-
-                <span>
-                  {data.skillMatch}%
-                </span>
-
+                <span>Keywords Match</span>
+                <span>{data.skillMatch}%</span>
               </div>
 
               <div className="w-full bg-white/10 rounded-full h-3">
-
                 <div
                   className="bg-green-500 h-3 rounded-full"
-                  style={{
-                    width: `${data.skillMatch}%`,
-                  }}
+                  style={{ width: `${data.skillMatch}%` }}
                 />
-
               </div>
-
             </div>
 
-
-            {/* SKILLS */}
-
             <div>
-
               <div className="flex justify-between mb-2">
-
-                <span>
-                  Skills Match
-                </span>
-
-                <span>
-                  {data.skillMatch}%
-                </span>
-
+                <span>Skills Match</span>
+                <span>{data.skillMatch}%</span>
               </div>
 
               <div className="w-full bg-white/10 rounded-full h-3">
-
                 <div
                   className="bg-blue-500 h-3 rounded-full"
-                  style={{
-                    width: `${data.skillMatch}%`,
-                  }}
+                  style={{ width: `${data.skillMatch}%` }}
                 />
-
               </div>
-
             </div>
 
-
-            {/* PROJECTS */}
-
             <div>
-
               <div className="flex justify-between mb-2">
-
-                <span>
-                  Projects
-                </span>
-
-                <span>
-                  80%
-                </span>
-
+                <span>Projects</span>
+                <span>80%</span>
               </div>
 
               <div className="w-full bg-white/10 rounded-full h-3">
-
                 <div
                   className="bg-violet-500 h-3 rounded-full"
-                  style={{
-                    width: "80%",
-                  }}
+                  style={{ width: "80%" }}
                 />
-
               </div>
-
             </div>
 
-
-            {/* FORMATTING */}
-
             <div>
-
               <div className="flex justify-between mb-2">
-
-                <span>
-                  Formatting
-                </span>
-
-                <span>
-                  90%
-                </span>
-
+                <span>Formatting</span>
+                <span>90%</span>
               </div>
 
               <div className="w-full bg-white/10 rounded-full h-3">
-
                 <div
                   className="bg-yellow-500 h-3 rounded-full"
-                  style={{
-                    width: "90%",
-                  }}
+                  style={{ width: "90%" }}
                 />
-
               </div>
-
             </div>
 
           </div>
-
         </div>
 
-
-        {/* AI SUGGESTIONS */}
+        {/* SUGGESTIONS */}
 
         <div className="bg-white/5 border border-white/10 rounded-3xl p-8 mt-10">
 
@@ -411,38 +387,19 @@ export default function ResultsPage() {
 
           <div className="space-y-4">
 
-            {data.suggestions &&
-            data.suggestions.length > 0 ? (
-
-              data.suggestions.map(
-                (suggestion, index) => (
-
-                  <div
-                    key={index}
-                    className="p-5 bg-white/5 border border-white/10 rounded-2xl"
-                  >
-
-                    <p className="text-gray-300">
-                      💡 {suggestion}
-                    </p>
-
-                  </div>
-
-                )
-              )
-
-            ) : (
-
-              <p className="text-gray-400">
-                Your resume looks good!
-              </p>
-
-            )}
+            {data.suggestions.map((suggestion, index) => (
+              <div
+                key={index}
+                className="p-5 bg-white/5 border border-white/10 rounded-2xl"
+              >
+                <p className="text-gray-300">
+                  💡 {suggestion}
+                </p>
+              </div>
+            ))}
 
           </div>
-
         </div>
-
 
         {/* BUTTONS */}
 
@@ -457,9 +414,8 @@ export default function ResultsPage() {
             ← Analyze Another Resume
           </button>
 
-
           <button
-            onClick={() => window.print()}
+            onClick={downloadReport}
             className="flex-1 bg-gradient-to-r from-blue-500 to-violet-600 py-4 rounded-xl font-semibold hover:scale-[1.02] transition"
           >
             📥 Download ATS Report
@@ -468,39 +424,6 @@ export default function ResultsPage() {
         </div>
 
       </div>
-
-
-      {/* PRINT DESIGN */}
-
-      <style jsx global>{`
-
-        @media print {
-
-          body {
-            background: white !important;
-            color: black !important;
-          }
-
-          main {
-            background: white !important;
-          }
-
-          * {
-            color: black !important;
-            border-color: #dddddd !important;
-          }
-
-          button {
-            display: none !important;
-          }
-
-          .bg-white\\/5 {
-            background: white !important;
-          }
-
-        }
-
-      `}</style>
 
     </main>
   );

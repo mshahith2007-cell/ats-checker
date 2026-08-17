@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import "pdf-parse/worker";
 import { PDFParse } from "pdf-parse";
 
 export async function POST(req: Request) {
@@ -23,23 +24,17 @@ export async function POST(req: Request) {
       );
     }
 
-    // Convert uploaded PDF to Buffer
     const buffer = Buffer.from(await resume.arrayBuffer());
 
-    // Create PDF parser
     const parser = new PDFParse({
       data: buffer,
     });
 
-    // Extract text
     const result = await parser.getText();
 
-    // Free parser resources
     await parser.destroy();
 
     const resumeText = result.text || "";
-
-    console.log("Resume text length:", resumeText.length);
 
     if (!resumeText.trim()) {
       return NextResponse.json(
@@ -87,19 +82,16 @@ export async function POST(req: Request) {
     const resumeLower = resumeText.toLowerCase();
     const jobLower = jobDescription.toLowerCase();
 
-    // Skills found in resume
     const foundSkills = skills.filter((skill) =>
       resumeLower.includes(skill.toLowerCase())
     );
 
-    // Skills present in both resume and job description
     const matchedSkills = skills.filter(
       (skill) =>
         resumeLower.includes(skill.toLowerCase()) &&
         jobLower.includes(skill.toLowerCase())
     );
 
-    // Skills in job description but missing from resume
     const missingSkills = skills.filter(
       (skill) =>
         jobLower.includes(skill.toLowerCase()) &&
@@ -108,12 +100,6 @@ export async function POST(req: Request) {
 
     let atsScore = 0;
     let skillMatch = 0;
-
-    /*
-      --------------------------------
-      NO JOB DESCRIPTION
-      --------------------------------
-    */
 
     if (!jobDescription.trim()) {
       const skillScore = Math.min(foundSkills.length * 5, 50);
@@ -127,9 +113,7 @@ export async function POST(req: Request) {
           ? 15
           : 10;
 
-      const contactScore = resumeLower.includes("@")
-        ? 10
-        : 0;
+      const contactScore = resumeLower.includes("@") ? 10 : 0;
 
       const sections = [
         "education",
@@ -152,24 +136,14 @@ export async function POST(req: Request) {
       );
 
       skillMatch = atsScore;
-    }
-
-    /*
-      --------------------------------
-      JOB DESCRIPTION EXISTS
-      --------------------------------
-    */
-
-    else {
+    } else {
       const requiredSkills = skills.filter((skill) =>
         jobLower.includes(skill.toLowerCase())
       );
 
       if (requiredSkills.length > 0) {
         skillMatch = Math.round(
-          (matchedSkills.length /
-            requiredSkills.length) *
-            100
+          (matchedSkills.length / requiredSkills.length) * 100
         );
       } else {
         skillMatch = 50;
@@ -197,9 +171,7 @@ export async function POST(req: Request) {
         jobWords > 0
           ? Math.min(
               100,
-              Math.round(
-                (keywordCount / jobWords) * 100
-              )
+              Math.round((keywordCount / jobWords) * 100)
             )
           : 50;
 
@@ -221,17 +193,8 @@ export async function POST(req: Request) {
           Math.min(structureScore, 100) * 0.15
       );
 
-      atsScore = Math.min(
-        100,
-        Math.max(0, atsScore)
-      );
+      atsScore = Math.min(100, Math.max(0, atsScore));
     }
-
-    /*
-      --------------------------------
-      DYNAMIC SUGGESTIONS
-      --------------------------------
-    */
 
     const suggestions: string[] = [];
 
